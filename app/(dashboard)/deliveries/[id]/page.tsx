@@ -1,4 +1,5 @@
 import { CancelShipment } from '@/features/deliveries/components/CancelShipment';
+import { EscrowActions } from '@/components/escrow/EscrowActions';
 
 export default function DeliveryDetailsPage({
   params,
@@ -16,6 +17,7 @@ export default function DeliveryDetailsPage({
 
       {/* Delivery status and tracking placeholder */}
 
+      <EscrowActions shipmentId={params.id} />
       <CancelShipment shipmentId={params.id} />
     </div>
   );
