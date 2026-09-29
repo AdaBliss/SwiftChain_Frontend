@@ -10,6 +10,7 @@ import ToastProvider from '@/components/providers/ToastProvider';
 import ModalProvider from '@/components/providers/ModalProvider';
 import { GlobalFooter } from '@/components/shared/GlobalFooter';
 import { themeService } from '@/services/themeService';
+import { PushNotificationButton } from '@/components/layout/PushNotificationButton';
 
 export const metadata = {
   title: 'SwiftChain',
@@ -45,6 +46,7 @@ export default function RootLayout({
                     gap: '0.5rem',
                   }}
                 >
+                  <PushNotificationButton />
                   <NotificationCenter />
                   <ThemeToggle />
                 </div>
