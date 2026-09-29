@@ -7,7 +7,24 @@ export interface AuditEvent {
   timestamp: string;
   actorId: string;
   actorAddress: string;
+  /** On-chain confirmation status of the event's transaction */
+  status?: AuditEventStatus;
   metadata?: Record<string, unknown>;
+}
+
+export type AuditEventStatus = 'confirmed' | 'pending' | 'failed';
+
+export interface AuditEventsQuery {
+  /** Opaque cursor returned by the previous page; omit for the first page */
+  cursor?: string | null;
+  limit: number;
+}
+
+export interface AuditEventsPage {
+  events: AuditEvent[];
+  /** Cursor for the next page, or null when this is the last page */
+  nextCursor: string | null;
+  totalCount: number;
 }
 
 export interface AuditTimelineResponse {
@@ -55,6 +72,17 @@ export const auditService = {
         message: error instanceof Error ? error.message : 'Failed to fetch contract timeline',
       };
     }
+  },
+
+  /**
+   * Fetches one cursor-paginated page of blockchain audit events across all contracts.
+   * Errors propagate so the calling hook can surface them.
+   */
+  async getAuditEvents({ cursor, limit }: AuditEventsQuery): Promise<AuditEventsPage> {
+    const { data } = await api.get<AuditEventsPage>('/api/audit/events', {
+      params: { limit, ...(cursor ? { cursor } : {}) },
+    });
+    return data;
   },
 
   /**
