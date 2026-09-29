@@ -11,6 +11,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
+import { useCurrency } from '@/context/CurrencyContext';
 
 interface MetricCardProps {
   label: string;
@@ -39,6 +40,7 @@ function MetricCard({ label, value, icon: Icon, isLoading }: MetricCardProps) {
 
 export default function AdminOverviewPage() {
   const { stats, isLoading, isError, refetch } = useAdminDashboard();
+  const { formatCurrency, isLoading: isCurrencyLoading } = useCurrency();
 
   return (
     <div>
@@ -79,10 +81,10 @@ export default function AdminOverviewPage() {
           isLoading={isLoading}
         />
         <MetricCard
-          label="Total Revenue (XLM)"
-          value={stats?.totalRevenue ?? 0}
+          label="Total Revenue"
+          value={formatCurrency(stats?.totalRevenue ?? 0)}
           icon={DollarSign}
-          isLoading={isLoading}
+          isLoading={isLoading || isCurrencyLoading}
         />
         <MetricCard
           label="Active Drivers"
@@ -97,10 +99,10 @@ export default function AdminOverviewPage() {
           isLoading={isLoading}
         />
         <MetricCard
-          label="Escrow Locked (XLM)"
-          value={stats?.escrowLocked ?? 0}
+          label="Escrow Locked"
+          value={formatCurrency(stats?.escrowLocked ?? 0)}
           icon={Lock}
-          isLoading={isLoading}
+          isLoading={isLoading || isCurrencyLoading}
         />
       </div>
     </div>
