@@ -1,7 +1,9 @@
 import {
   formatAssetAmount,
   formatRate,
+  formatSettlementDate,
   getStellarExplorerTxUrl,
+  truncateHash,
 } from '@/lib/settlementFormatters';
 
 describe('settlementFormatters', () => {
@@ -31,6 +33,22 @@ describe('settlementFormatters', () => {
       expect(getStellarExplorerTxUrl('abc123', 'testnet')).toBe(
         'https://stellar.expert/explorer/testnet/tx/abc123',
       );
+    });
+  });
+
+  describe('truncateHash', () => {
+    it('keeps the start and end of long hashes', () => {
+      expect(truncateHash('3f9a1c7e5b2d4a6f8c0e8b20e4')).toBe('3f9a1c…8b20e4');
+    });
+
+    it('returns short hashes unchanged', () => {
+      expect(truncateHash('abc123')).toBe('abc123');
+    });
+  });
+
+  describe('formatSettlementDate', () => {
+    it('formats ISO timestamps in UTC', () => {
+      expect(formatSettlementDate('2026-09-28T14:32:10Z')).toBe('Sep 28, 2026, 2:32 PM UTC');
     });
   });
 });

@@ -25,3 +25,21 @@ export function formatRate(rate: number): string {
 export function getStellarExplorerTxUrl(hash: string, network: StellarNetwork): string {
   return `${STELLAR_EXPERT_BASE_URL}/${network}/tx/${encodeURIComponent(hash)}`;
 }
+
+/** Shortens a transaction hash for display, e.g. "3f9a1c…8b20e4". */
+export function truncateHash(hash: string, visible = 6): string {
+  if (hash.length <= visible * 2 + 1) return hash;
+  return `${hash.slice(0, visible)}…${hash.slice(-visible)}`;
+}
+
+export function formatSettlementDate(iso: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'UTC',
+    timeZoneName: 'short',
+  }).format(new Date(iso));
+}
