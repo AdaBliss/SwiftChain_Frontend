@@ -11,6 +11,7 @@ import ModalProvider from '@/components/providers/ModalProvider';
 import { GlobalFooter } from '@/components/shared/GlobalFooter';
 import { themeService } from '@/services/themeService';
 import { CurrencySelector } from '@/components/layout/CurrencySelector';
+import { PushNotificationButton } from '@/components/layout/PushNotificationButton';
 
 export const metadata = {
   title: 'SwiftChain',
@@ -47,6 +48,7 @@ export default function RootLayout({
                   }}
                 >
                   <CurrencySelector />
+                  <PushNotificationButton />
                   <NotificationCenter />
                   <ThemeToggle />
                 </div>
