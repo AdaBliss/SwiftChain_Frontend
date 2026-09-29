@@ -4,11 +4,16 @@ interface PushConfiguration {
   publicKey: string;
 }
 
-function decodeApplicationServerKey(value: string): Uint8Array {
+function decodeApplicationServerKey(value: string): ArrayBuffer {
   const padding = '='.repeat((4 - (value.length % 4)) % 4);
   const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
   const decoded = window.atob(base64);
-  return Uint8Array.from(decoded, (character) => character.charCodeAt(0));
+  const buffer = new ArrayBuffer(decoded.length);
+  const bytes = new Uint8Array(buffer);
+  for (let index = 0; index < decoded.length; index += 1) {
+    bytes[index] = decoded.charCodeAt(index);
+  }
+  return buffer;
 }
 
 export const pushNotificationService = {
