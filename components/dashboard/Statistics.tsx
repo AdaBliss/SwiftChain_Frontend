@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 import type { AdminStats } from '@/services/adminService';
+import { useCurrency } from '@/context/CurrencyContext';
 
 /**
  * Presentation config for each statistic card. `key` maps to a field on the
@@ -23,18 +24,19 @@ const STAT_CARDS: ReadonlyArray<{
   key: keyof AdminStats;
   label: string;
   icon: LucideIcon;
+  monetary?: boolean;
 }> = [
   { key: 'totalUsers', label: 'Total Users', icon: Users },
   { key: 'activeDeliveries', label: 'Active Deliveries', icon: Package },
-  { key: 'totalRevenue', label: 'Total Revenue (XLM)', icon: DollarSign },
+  { key: 'totalRevenue', label: 'Total Revenue', icon: DollarSign, monetary: true },
   { key: 'activeDrivers', label: 'Active Drivers', icon: Truck },
   { key: 'pendingKyc', label: 'Pending KYC', icon: ShieldCheck },
-  { key: 'escrowLocked', label: 'Escrow Locked (XLM)', icon: Lock },
+  { key: 'escrowLocked', label: 'Escrow Locked', icon: Lock, monetary: true },
 ];
 
 interface StatCardProps {
   label: string;
-  value: number;
+  value: string;
   icon: LucideIcon;
   isLoading: boolean;
 }
@@ -68,7 +70,7 @@ function StatCard({ label, value, icon: Icon, isLoading }: StatCardProps) {
           <div className="h-8 w-24 animate-pulse rounded-md bg-slate-200 dark:bg-slate-700" />
         ) : (
           <p className="text-2xl font-bold text-slate-900 dark:text-white">
-            {value.toLocaleString()}
+            {value}
           </p>
         )}
       </div>
@@ -88,6 +90,7 @@ function StatCard({ label, value, icon: Icon, isLoading }: StatCardProps) {
  */
 export function Statistics() {
   const { stats, isLoading, isError, refetch } = useAdminDashboard();
+  const { formatCurrency, isLoading: isCurrencyLoading } = useCurrency();
 
   return (
     <section>
@@ -115,13 +118,17 @@ export function Statistics() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {STAT_CARDS.map(({ key, label, icon }) => (
+        {STAT_CARDS.map(({ key, label, icon, monetary }) => (
           <StatCard
             key={key}
             label={label}
-            value={stats?.[key] ?? 0}
+            value={
+              monetary
+                ? formatCurrency(stats?.[key] ?? 0)
+                : (stats?.[key] ?? 0).toLocaleString()
+            }
             icon={icon}
-            isLoading={isLoading}
+            isLoading={isLoading || (Boolean(monetary) && isCurrencyLoading)}
           />
         ))}
       </div>
