@@ -136,7 +136,6 @@ export default function Home() {
 
       <section className="py-24 px-6 bg-gradient-to-b from-black via-gray-900 to-black">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-4 text-slate-900">
           <h2 className="text-4xl font-bold text-center mb-4 text-white">
             Why Businesses Choose SwiftChain
           </h2>
@@ -392,6 +391,8 @@ export default function Home() {
         <button className="bg-white text-blue-600 px-10 py-4 rounded-lg font-bold text-lg hover:scale-105 active:scale-95 transition">
           Launch Your First Delivery <ArrowRight className="inline h-5 w-5" />
         </button>
+      </section>
+
       <section className="px-6 py-8">
         <div className="mx-auto max-w-6xl">
           <CallToAction />

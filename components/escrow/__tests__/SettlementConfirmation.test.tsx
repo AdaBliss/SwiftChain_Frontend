@@ -1,50 +1,30 @@
-import React from 'react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SettlementConfirmation } from '@/components/escrow/SettlementConfirmation';
+import { SettlementConfirmation } from '../SettlementConfirmation';
 import {
-  escrowSettlementService,
-  SettlementServiceError,
-} from '@/services/escrowSettlementService';
-import {
-  ESCROW_ID,
-  SETTLEMENT_TX_HASH,
-  confirmedSettlementResponse,
-  failedSettlementResponse,
-  finalizingSettlementResponse,
-  pendingSettlementResponse,
-} from '@/hooks/__tests__/fixtures/settlementApiResponses';
+  useSettlementBreakdown,
+  type UseSettlementBreakdownReturn,
+} from '@/hooks/useSettlementBreakdown';
+import { settlementBreakdown } from './fixtures/settlementApiResponses';
 
-jest.mock('@/services/escrowSettlementService', () => {
-  const actual = jest.requireActual('@/services/escrowSettlementService');
-  return {
-    ...actual,
-    escrowSettlementService: {
-      ...actual.escrowSettlementService,
-      getSettlement: jest.fn(),
-    },
-  };
-});
+jest.mock('@/hooks/useSettlementBreakdown');
 
-const mockGetSettlement = escrowSettlementService.getSettlement as jest.MockedFunction<
-  typeof escrowSettlementService.getSettlement
+const mockedUseSettlementBreakdown = useSettlementBreakdown as jest.MockedFunction<
+  typeof useSettlementBreakdown
 >;
 
-function renderScreen() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { gcTime: 0, retry: false } },
-  });
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <SettlementConfirmation escrowId={ESCROW_ID} />
-    </QueryClientProvider>,
-  );
-}
+const ESCROW_ID = 'CESCROW123';
 
-function breakdownRow(label: RegExp) {
-  const term = screen.getByText(label).closest('div') as HTMLElement;
-  return within(term.parentElement as HTMLElement);
+function mockHook(overrides: Partial<UseSettlementBreakdownReturn> = {}) {
+  const state: UseSettlementBreakdownReturn = {
+    settlement: settlementBreakdown,
+    isLoading: false,
+    error: null,
+    refetch: jest.fn(),
+    ...overrides,
+  };
+  mockedUseSettlementBreakdown.mockReturnValue(state);
+  return state;
 }
 
 describe('SettlementConfirmation', () => {
@@ -52,117 +32,145 @@ describe('SettlementConfirmation', () => {
     jest.clearAllMocks();
   });
 
-  it('shows a loading skeleton while fetching', () => {
-    mockGetSettlement.mockReturnValue(new Promise(() => {}));
-    renderScreen();
+  it('requests the settlement for the given escrow', () => {
+    mockHook();
 
-    expect(screen.getByTestId('settlement-loading')).toHaveAttribute('aria-busy', 'true');
+    render(<SettlementConfirmation escrowId={ESCROW_ID} />);
+
+    expect(mockedUseSettlementBreakdown).toHaveBeenCalledWith(ESCROW_ID);
   });
 
-  it('renders the success header and amount released to the driver', async () => {
-    mockGetSettlement.mockResolvedValue(confirmedSettlementResponse);
-    renderScreen();
+  describe('loading state', () => {
+    it('renders the loading skeleton', () => {
+      mockHook({ isLoading: true, settlement: null });
 
-    expect(await screen.findByRole('heading', { name: 'Settlement complete' })).toBeInTheDocument();
-    expect(screen.getByTestId('driver-payout')).toHaveTextContent('1,134.375 XLM');
-    expect(mockGetSettlement).toHaveBeenCalledWith(ESCROW_ID, expect.any(AbortSignal));
+      render(<SettlementConfirmation escrowId={ESCROW_ID} />);
+
+      const skeleton = screen.getByLabelText('Loading settlement details');
+      expect(skeleton).toHaveAttribute('aria-busy', 'true');
+    });
+
+    it('does not render the breakdown, error or empty state while loading', () => {
+      mockHook({ isLoading: true, settlement: null });
+
+      render(<SettlementConfirmation escrowId={ESCROW_ID} />);
+
+      expect(screen.queryByText('Settlement Complete')).not.toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(screen.queryByText('No settlement yet')).not.toBeInTheDocument();
+    });
   });
 
-  it('renders the fund breakdown from the settlement values', async () => {
-    mockGetSettlement.mockResolvedValue(confirmedSettlementResponse);
-    renderScreen();
+  describe('success state', () => {
+    it('renders the fund breakdown with formatted amounts', () => {
+      mockHook();
 
-    await screen.findByRole('heading', { name: 'Settlement complete' });
+      render(<SettlementConfirmation escrowId={ESCROW_ID} />);
 
-    expect(breakdownRow(/Total escrow amount/).getByText('1,250.00 XLM')).toBeInTheDocument();
-    expect(breakdownRow(/Platform commission \(2\.5%\)/).getByText('31.25 XLM')).toBeInTheDocument();
-    expect(breakdownRow(/VAT on platform fee \(7\.5%\)/).getByText('2.34375 XLM')).toBeInTheDocument();
-    expect(breakdownRow(/Withholding tax \(5%\)/).getByText('57.03125 XLM')).toBeInTheDocument();
-    expect(breakdownRow(/Remaining balance/).getByText('0.00 XLM')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Settlement Complete' })).toBeInTheDocument();
+      const breakdown = screen.getByLabelText('Fund breakdown');
+      expect(within(breakdown).getByText('1,250.00 XLM')).toBeInTheDocument();
+      expect(within(breakdown).getByText('Platform fee (2.5%)')).toBeInTheDocument();
+      expect(within(breakdown).getByText('31.25 XLM')).toBeInTheDocument();
+      expect(within(breakdown).getByText('0.00001 XLM')).toBeInTheDocument();
+      expect(within(breakdown).getByText('1,218.75 XLM')).toBeInTheDocument();
+    });
+
+    it('renders the delivery summary', () => {
+      mockHook();
+
+      render(<SettlementConfirmation escrowId={ESCROW_ID} />);
+
+      expect(screen.getByText('SC-2026-000889')).toBeInTheDocument();
+      expect(screen.getByText('Lagos → Abuja')).toBeInTheDocument();
+    });
+
+    it('hides the held amount row when nothing is held', () => {
+      mockHook();
+
+      render(<SettlementConfirmation escrowId={ESCROW_ID} />);
+
+      expect(screen.queryByText('Held pending review')).not.toBeInTheDocument();
+    });
+
+    it('shows the held amount when part of the escrow is still held', () => {
+      mockHook({ settlement: { ...settlementBreakdown, heldAmount: 100 } });
+
+      render(<SettlementConfirmation escrowId={ESCROW_ID} />);
+
+      expect(screen.getByText('Held pending review')).toBeInTheDocument();
+      expect(screen.getByText('100.00 XLM')).toBeInTheDocument();
+    });
   });
 
-  it('shows held amounts with the reason', async () => {
-    mockGetSettlement.mockResolvedValue(confirmedSettlementResponse);
-    renderScreen();
+  describe('transaction hash link', () => {
+    it('links to the Stellar explorer in a new tab', () => {
+      mockHook();
 
-    await screen.findByRole('heading', { name: 'Settlement complete' });
+      render(<SettlementConfirmation escrowId={ESCROW_ID} />);
 
-    expect(screen.getByText('Pending / held')).toBeInTheDocument();
-    expect(screen.getByText('25.00 XLM')).toBeInTheDocument();
-    expect(screen.getByText('Dispute window open for 24 hours')).toBeInTheDocument();
+      const link = screen.getByRole('link', { name: 'View transaction on Stellar explorer' });
+      expect(link).toHaveAttribute('href', settlementBreakdown.explorerUrl);
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+      expect(link).toHaveAttribute('rel', expect.stringContaining('noreferrer'));
+    });
+
+    it('shows a truncated hash as the link text', () => {
+      mockHook();
+
+      render(<SettlementConfirmation escrowId={ESCROW_ID} />);
+
+      expect(screen.getByRole('link')).toHaveTextContent('a1b2c3d4...e9f0a1b2');
+    });
+
+    it('shows a pending notice instead of a link when there is no hash yet', () => {
+      mockHook({
+        settlement: { ...settlementBreakdown, transactionHash: undefined, explorerUrl: undefined },
+      });
+
+      render(<SettlementConfirmation escrowId={ESCROW_ID} />);
+
+      expect(screen.queryByRole('link')).not.toBeInTheDocument();
+      expect(screen.getByText('Transaction confirmation pending')).toBeInTheDocument();
+    });
   });
 
-  it('hides the held row when nothing is held', async () => {
-    mockGetSettlement.mockResolvedValue({ ...confirmedSettlementResponse, heldAmount: 0, heldReason: null });
-    renderScreen();
+  describe('error state', () => {
+    it('displays the error message with a retry button', () => {
+      mockHook({ settlement: null, error: 'Request failed with status code 500' });
 
-    await screen.findByRole('heading', { name: 'Settlement complete' });
-    expect(screen.queryByText('Pending / held')).not.toBeInTheDocument();
+      render(<SettlementConfirmation escrowId={ESCROW_ID} />);
+
+      const alert = screen.getByRole('alert');
+      expect(alert).toHaveTextContent('Unable to load settlement details');
+      expect(alert).toHaveTextContent('Request failed with status code 500');
+      expect(within(alert).getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+    });
+
+    it('refetches the settlement when retry is clicked', async () => {
+      const user = userEvent.setup();
+      const { refetch } = mockHook({ settlement: null, error: 'Network Error' });
+
+      render(<SettlementConfirmation escrowId={ESCROW_ID} />);
+      await user.click(screen.getByRole('button', { name: 'Retry' }));
+
+      expect(refetch).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it('links the transaction hash to the Stellar explorer', async () => {
-    mockGetSettlement.mockResolvedValue(confirmedSettlementResponse);
-    renderScreen();
+  describe('empty state', () => {
+    it('renders a fallback when there is no settlement data', () => {
+      mockHook({ settlement: null });
 
-    const link = await screen.findByRole('link', { name: /view on stellar explorer/i });
-    expect(link).toHaveAttribute('href', `https://stellar.expert/explorer/testnet/tx/${SETTLEMENT_TX_HASH}`);
-    expect(link).toHaveAttribute('target', '_blank');
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-    expect(screen.getByTitle(SETTLEMENT_TX_HASH)).toBeInTheDocument();
-    expect(screen.getByText('51234567')).toBeInTheDocument();
-  });
+      render(<SettlementConfirmation escrowId={ESCROW_ID} />);
 
-  it('renders the delivery summary', async () => {
-    mockGetSettlement.mockResolvedValue(confirmedSettlementResponse);
-    renderScreen();
-
-    await screen.findByRole('heading', { name: 'Settlement complete' });
-
-    expect(screen.getByText('SWC-2026-004821')).toBeInTheDocument();
-    expect(screen.getByText('Lagos, NG')).toBeInTheDocument();
-    expect(screen.getByText('Accra, GH')).toBeInTheDocument();
-    expect(screen.getByText('Sep 28, 2026, 1:58 PM UTC')).toBeInTheDocument();
-  });
-
-  it('shows a finalizing notice while the transaction is confirming', async () => {
-    mockGetSettlement.mockResolvedValue(finalizingSettlementResponse);
-    renderScreen();
-
-    expect(await screen.findByRole('heading', { name: 'Finalizing settlement' })).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent(/updates automatically/i);
-  });
-
-  it('explains the missing hash before the transaction is submitted', async () => {
-    mockGetSettlement.mockResolvedValue(pendingSettlementResponse);
-    renderScreen();
-
-    await screen.findByRole('heading', { name: 'Finalizing settlement' });
-    expect(screen.queryByRole('link', { name: /view on stellar explorer/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/transaction hash will appear once submitted/i)).toBeInTheDocument();
-  });
-
-  it('renders the failed state', async () => {
-    mockGetSettlement.mockResolvedValue(failedSettlementResponse);
-    renderScreen();
-
-    expect(await screen.findByRole('heading', { name: 'Settlement failed' })).toBeInTheDocument();
-    expect(screen.getByText('Driver payout (not released)')).toBeInTheDocument();
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
-  });
-
-  it('shows an error with retry when the API fails', async () => {
-    mockGetSettlement
-      .mockRejectedValueOnce(new SettlementServiceError('Settlement not found for this escrow.', 404))
-      .mockResolvedValue(confirmedSettlementResponse);
-    renderScreen();
-
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Settlement not found for this escrow.');
-
-    await userEvent.click(within(alert).getByRole('button', { name: /try again/i }));
-
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: 'Settlement complete' })).toBeInTheDocument(),
-    );
+      expect(screen.getByText('No settlement yet')).toBeInTheDocument();
+      expect(
+        screen.getByText('Settlement details will appear here once the escrow funds are released.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Settlement Complete')).not.toBeInTheDocument();
+      expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    });
   });
 });
