@@ -1,6 +1,6 @@
 # Issue #485: E2E Tests for Role-Based Route Protection Middleware
 
-## Quick Links
+##Quick Links
 
 - 📋 **Main Documentation:** `ROLE_BASED_ROUTE_PROTECTION_E2E_TESTS.md`
 - 📝 **PR Description:** `PR_ROLE_BASED_ROUTE_PROTECTION.md`
