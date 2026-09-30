@@ -4,7 +4,7 @@
 **Status**: Ready for Review  
 **Branch**: `perf/dynamic-chart-imports`
 
-## Executive Summary
+##Executive Summary
 
 This PR implements a comprehensive code-splitting strategy for heavy chart libraries in the SwiftChain Frontend dashboard. Using Next.js dynamic imports and viewport detection, we've achieved:
 
