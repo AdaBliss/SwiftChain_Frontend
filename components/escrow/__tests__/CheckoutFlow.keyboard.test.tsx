@@ -108,7 +108,7 @@ describe('Escrow Checkout Flow - Keyboard Navigation', () => {
       const tooltipButton = screen.getByRole('button', { name: /Why XLM only\?/i });
       expect(tooltipButton.tagName).toBe('BUTTON');
     });
-  }););
+  });
 
   describe('PaymentLock - Enter Key Submission', () => {
     it('should reject form submission when amount is invalid', async () => {

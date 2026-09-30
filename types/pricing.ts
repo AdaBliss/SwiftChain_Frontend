@@ -31,3 +31,13 @@ export interface PricingCard {
 export interface PricingCardsResponse {
   cards: PricingCard[];
 }
+
+export interface PricingFAQItem {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+export interface PricingFAQResponse {
+  items: PricingFAQItem[];
+}
