@@ -7,6 +7,21 @@ import type {
   PaginationCursor,
 } from '@/types/audit';
 
+export type AuditEventStatus = 'confirmed' | 'pending' | 'failed';
+
+export interface AuditEventsQuery {
+  /** Opaque cursor returned by the previous page; omit for the first page */
+  cursor?: string | null;
+  limit: number;
+}
+
+export interface AuditEventsPage {
+  events: AuditEvent[];
+  /** Cursor for the next page, or null when this is the last page */
+  nextCursor: string | null;
+  totalCount: number;
+}
+
 export interface AuditTimelineResponse {
   success: boolean;
   message?: string;
