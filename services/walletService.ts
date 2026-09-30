@@ -1,3 +1,10 @@
+import api from '@/lib/api';
+import type {
+  PendingMultiSigResponse,
+  SignMultiSigParams,
+  SignMultiSigResponse,
+} from '@/types/multiSig';
+
 export interface WalletBalance {
   available: number;
   locked: number;
@@ -115,6 +122,25 @@ class WalletService {
       this.balanceCache !== null &&
       Date.now() - this.lastFetchTime < this.CACHE_DURATION
     );
+  }
+
+  /**
+   * Fetch pending multi-signature operations awaiting the given wallet's approval.
+   */
+  async getPendingMultiSigOperations(walletAddress: string): Promise<PendingMultiSigResponse> {
+    const { data } = await api.get<PendingMultiSigResponse>('/wallet/multi-sig/pending', {
+      params: { walletAddress },
+    });
+    return data;
+  }
+
+  /**
+   * Submit a signature for a multi-sig operation. The backend broadcasts the
+   * transaction once all required signatures are collected.
+   */
+  async signMultiSigOperation(params: SignMultiSigParams): Promise<SignMultiSigResponse> {
+    const { data } = await api.post<SignMultiSigResponse>('/wallet/multi-sig/sign', params);
+    return data;
   }
 
   /**
