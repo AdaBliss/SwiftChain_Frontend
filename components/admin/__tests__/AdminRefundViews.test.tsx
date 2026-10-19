@@ -47,8 +47,13 @@ const refunds = [
 
 beforeAll(() => {
   // jsdom has no layout; give the virtualized scroll container a size.
-  Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 400 });
-  Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 800 });
+  // Different virtual-core versions measure offset* or client* sizes; mock both.
+  for (const prop of ['offsetHeight', 'clientHeight'] as const) {
+    Object.defineProperty(HTMLElement.prototype, prop, { configurable: true, value: 400 });
+  }
+  for (const prop of ['offsetWidth', 'clientWidth'] as const) {
+    Object.defineProperty(HTMLElement.prototype, prop, { configurable: true, value: 800 });
+  }
 });
 
 beforeEach(() => {

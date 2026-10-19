@@ -18,6 +18,7 @@ interface RefundViewProps {
 }
 
 const ROW_HEIGHT = 44;
+const SCROLL_HEIGHT = 384;
 
 /** Table view: virtualized rows so only the visible window is rendered. */
 export function RefundTableView({ onSelectRefund }: RefundViewProps) {
@@ -56,7 +57,7 @@ export function RefundTableView({ onSelectRefund }: RefundViewProps) {
               </div>
             ))}
           </div>
-          <div ref={scrollRef} className="h-96 overflow-auto">
+          <div ref={scrollRef} className="overflow-auto" style={{ height: SCROLL_HEIGHT }}>
             <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
               {virtualizer.getVirtualItems().map((item) => {
                 const refund = data.refunds[item.index];
