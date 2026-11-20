@@ -77,7 +77,12 @@ export function useCreateDelivery(): UseCreateDeliveryReturn {
   });
 
   const onSubmit = async (values: CreateDeliveryFormValues) => {
-    await createDelivery.mutateAsync(values);
+    try {
+      await createDelivery.mutateAsync(values);
+    } catch {
+      // Already surfaced to the user by the mutation's onError handler;
+      // swallowing here avoids an unhandled rejection from the form submit.
+    }
   };
 
   return {
